@@ -1,0 +1,131 @@
+{
+  "name": "dsh-wechat-plugin",
+  "version": "0.47.0-dshgo.2",
+  "type": "module",
+  "description": "WeChat channel for DSH — dsh-go adaptation: native dshGo panels + local management port, no WebView required.",
+  "keywords": [
+    "dsh",
+    "deepseek-harness",
+    "wechat",
+    "weixin",
+    "clawbot",
+    "ilink",
+    "chatbot",
+    "channel",
+    "plugin",
+    "remote-control"
+  ],
+  "homepage": "https://github.com/xcisxc29/dsh-wechat#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/xcisxc29/dsh-wechat.git"
+  },
+  "bugs": {
+    "url": "https://github.com/xcisxc29/dsh-wechat/issues"
+  },
+  "main": "lib/host.js",
+  "types": "lib/host.d.ts",
+  "bin": {
+    "dsh-wechat-send": "./cli.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./lib/host.d.ts",
+      "default": "./lib/host.js"
+    },
+    "./cli": "./cli.js",
+    "./cordis.patch.yml": "./cordis.patch.yml",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib",
+    "dist",
+    "src",
+    "mobile",
+    "cli.js",
+    "cordis.patch.yml",
+    "README.md",
+    "LICENSE",
+    "README-dshgo.md"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/dsh-home-paths": ">=0.1.7-rc.2 <0.3.0-0"
+  },
+  "peerDependenciesMeta": {
+    "@deepseek-ai/dsh-home-paths": {
+      "optional": true
+    }
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    }
+  },
+  "dshGo": {
+    "v": 1,
+    "title": {
+      "zh": "微信桥",
+      "en": "WeChat Bridge"
+    },
+    "icon": "account",
+    "contributes": {
+      "panels": [
+        {
+          "id": "wechat",
+          "title": {
+            "zh": "微信通道",
+            "en": "Channel"
+          },
+          "icon": "account",
+          "placement": [
+            "session.tab",
+            "features"
+          ]
+        },
+        {
+          "id": "login",
+          "title": {
+            "zh": "扫码登录",
+            "en": "Login"
+          },
+          "icon": "running",
+          "placement": [
+            "session.tab",
+            "features"
+          ]
+        },
+        {
+          "id": "chat",
+          "title": {
+            "zh": "微信会话",
+            "en": "Chats"
+          },
+          "icon": "model",
+          "placement": [
+            "session.tab",
+            "features"
+          ]
+        },
+        {
+          "id": "diag",
+          "title": {
+            "zh": "诊断",
+            "en": "Diagnostics"
+          },
+          "icon": "globe",
+          "placement": [
+            "session.tab",
+            "features"
+          ]
+        }
+      ]
+    }
+  },
+  "engines": {
+    "dsh": ">=0.2.0"
+  }
+}

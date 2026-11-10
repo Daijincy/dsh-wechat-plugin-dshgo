@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>微信桥 · 管理</title>
+<style>
+  :root{
+    --bg:#0f1115;--card:#171a21;--line:#262b36;--text:#e8ecf3;--muted:#8b95a7;
+    --good:#2ea043;--warn:#d29922;--bad:#da3633;--accent:#4c8dff;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;padding:16px 14px 40px;background:var(--bg);color:var(--text);overflow-x:hidden;
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Noto Sans CJK SC",sans-serif}
+  header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+  h1{font-size:19px;margin:0;font-weight:600}
+  .pill{font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+  .pill.good{color:var(--good);border-color:#1c3b26}
+  .pill.warn{color:var(--warn);border-color:#3b3418}
+  .pill.bad{color:var(--bad);border-color:#3d2020}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:12px;overflow:hidden}
+  .card h2{font-size:13px;margin:0 0 10px;color:var(--muted);font-weight:600;letter-spacing:.02em}
+  dl{display:grid;grid-template-columns:max-content minmax(0,1fr);gap:6px 12px;margin:0}
+  dt{color:var(--muted);font-size:13px}
+  dd{margin:0;min-width:0;font-size:13px;text-align:right;overflow-wrap:anywhere;word-break:break-word}
+  .hint{color:var(--muted);font-size:12.5px;margin:8px 0 0}
+  .ok{color:var(--good)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+  button{font:inherit;padding:9px 14px;border-radius:10px;border:1px solid var(--line);
+    background:#1e231c0;background:#20242e;color:var(--text);cursor:pointer}
+  button.primary{background:var(--accent);border-color:#3a6fd0;color:#fff}
+  button:disabled{opacity:.5}
+  .row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+  input{font:inherit;flex:1;min-width:0;padding:9px 12px;border-radius:10px;
+    border:1px solid var(--line);background:#12151b;color:var(--text)}
+  ul{list-style:none;margin:0;padding:0}
+  li{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+  li:first-child{border-top:0}
+  li .sub{color:var(--muted);font-size:12px}
+  img.qr{display:block;width:220px;height:220px;margin:10px auto 4px;background:#fff;border-radius:10px;padding:8px}
+  pre{margin:0;font-size:11.5px;line-height:1.5;color:var(--muted);white-space:pre-wrap;word-break:break-all;
+    max-height:220px;overflow:auto}
+  a{color:var(--accent)}
+</style>
+</head>
+<body>
+<header>
+  <h1>微信桥 · 管理</h1>
+  <span class="pill" id="pill">读取中…</span>
+</header>
+
+<section class="card">
+  <h2>通道状态</h2>
+  <dl>
+    <dt>通道</dt><dd id="ch-state">—</dd>
+    <dt>账号</dt><dd id="ch-accounts">—</dd>
+    <dt>轮询中</dt><dd id="ch-polling">—</dd>
+    <dt>会话绑定</dt><dd id="ch-bindings">—</dd>
+    <dt>工作区</dt><dd id="ch-workspace">—</dd>
+  </dl>
+  <div class="row">
+    <button class="primary" id="toggle-btn" onclick="toggle()">开启通道</button>
+    <button onclick="refresh()">刷新</button>
+  </div>
+  <p class="hint" id="ch-errors"></p>
+</section>
+
+<section class="card">
+  <h2>扫码登录</h2>
+  <dl>
+    <dt>阶段</dt><dd id="lg-phase">—</dd>
+    <dt>提示</dt><dd id="lg-step">—</dd>
+  </dl>
+  <div id="qr-wrap" style="display:none">
+    <img class="qr" id="qr-img" alt="微信登录二维码" />
+    <p class="hint" style="text-align:center">
+      用手机微信扫这张码；链接：<a id="qr-link" href="#" target="_blank" rel="noopener">打开</a>
+    </p>
+  </div>
+  <div class="row">
+    <button class="primary" id="login-btn" onclick="startLogin()">开始扫码登录</button>
+    <button onclick="cancelLogin()" id="cancel-btn">取消</button>
+  </div>
+  <div class="row" id="verify-row" style="display:none">
+    <input id="verify-code" placeholder="输入配对验证码" inputmode="numeric" />
+    <button onclick="submitCode()">提交</button>
+  </div>
+  <p class="hint" id="lg-note"></p>
+</section>
+
+<section class="card">
+  <h2>账号与会话</h2>
+  <ul id="account-list"><li><span class="sub">还没有账号</span></li></ul>
+  <p class="hint">长按/单击账号可断开（断开后需要重新扫码）。</p>
+  <ul id="binding-list" style="margin-top:10px"></ul>
+</section>
+
+<section class="card">
+  <h2>诊断</h2>
+  <dl>
+    <dt>版本</dt><dd id="dg-version">—</dd>
+    <dt>状态文件</dt><dd id="dg-state-path">—</dd>
+    <dt>启动日志</dt><dd id="dg-log-path">—</dd>
+  </dl>
+  <pre id="dg-tail"></pre>
+  <div class="row"><button onclick="copyDiag()">复制诊断</button></div>
+</section>
+
+<script>
+const el = id => document.getElementById(id);
+const setText = (id, v) => { el(id).textContent = v == null || v === '' ? '—' : String(v) };
+let latest = null;
+
+function pill(text, tone){
+  const node = el('pill');
+  node.textContent = text;
+  node.className = 'pill ' + (tone || '');
+}
+
+function shortPath(path){
+  if(!path) return '—';
+  return path.length <= 34 ? path : '…' + path.slice(-32);
+}
+
+function render(s){
+  latest = s;
+  const accounts = s.accounts || [];
+  const polling = accounts.filter(a => a.polling).length;
+  const healthy = s.ready && s.enabled && polling > 0;
+  pill(s.ready ? (s.enabled ? (polling > 0 ? '运行中' : '待扫码') : '已关闭') : '未启动',
+       healthy ? 'good' : (s.ready ? 'warn' : 'bad'));
+
+  setText('ch-state', s.ready ? (s.enabled ? '已开启' : '已关闭') : 'wechatChannel 缺失');
+  setText('ch-accounts', accounts.length + ' 个');
+  setText('ch-polling', polling + ' 个');
+  setText('ch-bindings', (s.bindings || []).length + ' 个');
+  setText('ch-workspace', shortPath(s.diag && s.diag.workspace));
+  el('ch-errors').textContent = (s.errors || []).slice(-2).join(' / ');
+  el('toggle-btn').textContent = s.enabled ? '关闭通道' : '开启通道';
+  el('toggle-btn').disabled = !s.ready;
+
+  const login = s.login || {};
+  setText('lg-phase', login.phase || 'idle');
+  setText('lg-step', login.step || '—');
+  const hasQr = !!login.qrDataUrl;
+  el('qr-wrap').style.display = hasQr ? 'block' : 'none';
+  if(hasQr){
+    el('qr-img').src = login.qrDataUrl;
+    el('qr-link').href = login.qrUrl || login.qrDataUrl;
+  }
+  el('verify-row').style.display = login.awaitingVerifyCode ? 'flex' : 'none';
+  el('lg-note').textContent = s.verifyNote || '';
+
+  const list = el('account-list');
+  list.innerHTML = '';
+  if(accounts.length === 0){
+    list.innerHTML = '<li><span class="sub">还没有账号，点上面「开始扫码登录」</span></li>';
+  } else {
+    accounts.forEach(a => {
+      const li = document.createElement('li');
+      li.innerHTML = '<span>' + (a.userId || a.accountId) + '<div class="sub">' +
+        (a.polling ? '轮询中' : '已连接，未轮询') + '</div></span>' +
+        '<button data-id="' + a.accountId + '">断开</button>';
+      li.querySelector('button').onclick = () => disconnect(a.accountId);
+      list.appendChild(li);
+    });
+  }
+
+  const bindings = s.bindings || [];
+  const bl = el('binding-list');
+  bl.innerHTML = bindings.length === 0 ? '' :
+    bindings.slice(0, 10).map(b =>
+      '<li><span>' + (b.title || b.sessionId || b.conversationId) +
+      '<div class="sub">对方 ' + (b.peerId || '—') + '</div></span><span class="sub">已绑定</span></li>').join('');
+
+  setText('dg-version', s.version);
+  setText('dg-state-path', shortPath(s.diag && s.diag.statePath));
+  setText('dg-log-path', shortPath(s.diag && s.diag.logPath));
+  el('dg-tail').textContent = ((s.diag && s.diag.logTail) || []).slice(-12).join('\n') || '（启动日志为空）';
+}
+
+async function api(path, options){
+  const res = await fetch(path, Object.assign({headers:{'content-type':'application/json'}}, options || {}));
+  return res.json();
+}
+
+async function refresh(){
+  try { render(await api('/api/status')); } catch(e){ pill('连接失败', 'bad'); }
+}
+
+async function toggle(){
+  el('toggle-btn').disabled = true;
+  try {
+    const want = !(latest && latest.enabled);
+    render(await api('/api/toggle', {method:'POST', body: JSON.stringify({enabled: want})}));
+  } catch(e){ pill('切换失败', 'bad'); }
+  finally { el('toggle-btn').disabled = false; }
+}
+
+async function startLogin(){
+  el('login-btn').disabled = true;
+  try {
+    const r = await api('/api/login/start', {method:'POST', body:'{}'});
+    if(r.login) render(Object.assign({}, latest || {}, {login: r.login}));
+    if(!r.ok) setText('lg-note', '二维码还没出来，稍等再刷新');
+  } catch(e){ pill('登录失败', 'bad'); }
+  finally { el('login-btn').disabled = false; }
+}
+
+async function cancelLogin(){
+  try { render(await api('/api/login/cancel', {method:'POST', body:'{}'})); } catch(e){}
+}
+
+async function submitCode(){
+  const code = (el('verify-code').value || '').trim();
+  if(!code) return;
+  try {
+    const r = await api('/api/login/verify', {method:'POST', body: JSON.stringify({code})});
+    el('verify-code').value = '';
+    render(r);
+  } catch(e){}
+}
+
+async function disconnect(accountId){
+  if(!confirm('断开这个微信账号？断开后需要重新扫码。')) return;
+  try { render(await api('/api/disconnect', {method:'POST', body: JSON.stringify({accountId})})); } catch(e){}
+}
+
+function copyDiag(){
+  const s = latest || {};
+  const text = [
+    'version: ' + s.version,
+    'ready: ' + s.ready,
+    'enabled: ' + s.enabled,
+    'accounts: ' + (s.accounts || []).length,
+    'login: ' + ((s.login || {}).phase || '') + ' ' + ((s.login || {}).step || ''),
+    'errors: ' + ((s.errors || []).join(' | ') || '(none)'),
+  ].join('\n');
+  if(navigator.clipboard) navigator.clipboard.writeText(text).catch(()=>{});
+  else alert(text);
+}
+
+refresh();
+setInterval(refresh, 3000);
+</script>
+</body>
+</html>
